@@ -1,6 +1,14 @@
 import warnings
 from asl_data import SinglesData
 
+def get_model_ll_safe(model, X, lengths):
+    """ Returns model.score(X, lengths) unless an exception is thrown,
+    in which case returns float("-inf")
+    """
+    try:
+        return model.score(X, lengths)
+    except:
+        return float("-inf")
 
 def recognize(models: dict, test_set: SinglesData):
     """ Recognize test word sequences from word models set
@@ -18,8 +26,9 @@ def recognize(models: dict, test_set: SinglesData):
            ['WORDGUESS0', 'WORDGUESS1', 'WORDGUESS2',...]
    """
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    probabilities = []
-    guesses = []
+    probabilities = [{k:get_model_ll_safe(model, X, lengths) for k, model in models.items()}
+                     for X, lengths in test_set.get_all_Xlengths().values()]
+    guesses = [max(prob, key=prob.get) for prob in probabilities]
     # TODO implement the recognizer
-    # return probabilities, guesses
-    raise NotImplementedError
+    return probabilities, guesses
+    
